@@ -1,0 +1,2 @@
+full_name,email,position,health_discount_amount,social_discount_amount,taxes_discount_amount,other_discount_amount,gross_salary,gross_payment,net_payment,period
+Roberto Camejo,roberto.camejo@gmail.com,Software Engineer,50,30,100,20,5000,4800,4600,2025-04-30
