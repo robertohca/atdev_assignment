@@ -6,7 +6,7 @@ from app.main import app
 @pytest.mark.asyncio
 async def test_process_payroll_success(monkeypatch):
     csv_content = """full_name,email,position,health_discount_amount,social_discount_amount,taxes_discount_amount,other_discount_amount,gross_salary,gross_payment,net_payment,period
-Roberto Camejo,roberto.camejo@gmail.com,Software Engineer,50,30,100,20,5000,4800,4600,2025-04-30
+Roberto Camejo,fastapiassignment@gmail.com,Software Engineer,50,30,100,20,5000,4800,4600,2025-04-30
 """
 
     monkeypatch.setattr("app.main.validate_credentials", lambda u, p: True)
@@ -16,15 +16,14 @@ Roberto Camejo,roberto.camejo@gmail.com,Software Engineer,50,30,100,20,5000,4800
     # Usa solo base_url sin app en AsyncClient
     async with AsyncClient(base_url="http://web") as ac:
         response = await ac.post(
-            "/process?country=do&company=MiEmpresa",
-            auth=("admin", "admin123"),
+            "/process?credentials=admin%2Badmin123&country=do&company=MiEmpresa",
             files={"file": ("payroll.csv", csv_content, "text/csv")}
         )
 
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "success"
-    assert data["results"][0]["email"] == "roberto.camejo@gmail.com"
+    assert data["results"][0]["email"] == "fastapiassignment@gmail.com"
 
 
 # Test: Credenciales inválidas
@@ -33,13 +32,12 @@ async def test_process_payroll_invalid_credentials(monkeypatch):
     monkeypatch.setattr("app.main.validate_credentials", lambda u, p: False)
 
     csv_content = """full_name,email,position,health_discount_amount,social_discount_amount,taxes_discount_amount,other_discount_amount,gross_salary,gross_payment,net_payment,period
-Roberto Camejo,roberto.camejo@gmail.com,Software Engineer,50,30,100,20,5000,4800,4600,2025-04-30
+Roberto Camejo,fastapiassignment@gmail.com,Software Engineer,50,30,100,20,5000,4800,4600,2025-04-30
 """
 
     async with AsyncClient(base_url="http://web") as ac:
         response = await ac.post(
-            "/process?country=do&company=MiEmpresa",
-            auth=("wrong", "wrong"),
+            "/process?credentials=wrong%2Bwrong&country=do&company=MiEmpresa",
             files={"file": ("payroll.csv", csv_content, "text/csv")}
         )
 
@@ -56,13 +54,12 @@ async def test_process_payroll_invalid_csv(monkeypatch):
 
     # Falta columna net_payment
     csv_content = """full_name,email,position,health_discount_amount,social_discount_amount,taxes_discount_amount,other_discount_amount,gross_salary,gross_payment,period
-Carlos Gómez,roberto.camejo@gmail.com,QA Engineer,30,20,80,15,3500,3400,2025-04-30
+Carlos Gómez,fastapiassignment@gmail.com,QA Engineer,30,20,80,15,3500,3400,2025-04-30
 """
 
     async with AsyncClient(base_url="http://web") as ac:
         response = await ac.post(
-            "/process?country=do&company=MiEmpresa",
-            auth=("admin", "admin123"),
+            "/process?credentials=admin%2Badmin123&country=do&company=MiEmpresa",
             files={"file": ("bad.csv", csv_content, "text/csv")}
         )
 
@@ -70,16 +67,16 @@ Carlos Gómez,roberto.camejo@gmail.com,QA Engineer,30,20,80,15,3500,3400,2025-04
     data = response.json()
     assert data["status"] == "success"
     assert "error" in data["results"][0]
-    assert data["results"][0]["email"] == "roberto.camejo@gmail.com"
+    assert data["results"][0]["email"] == "fastapiassignment@gmail.com"
 
 
 # Test: CSV con una fila buena y dos con errores
 @pytest.mark.asyncio
 async def test_process_payroll_partial_success(monkeypatch):
     csv_content = """full_name,email,position,health_discount_amount,social_discount_amount,taxes_discount_amount,other_discount_amount,gross_salary,gross_payment,net_payment,period
-Roberto Camejo,roberto.camejo@gmail.com,Software Engineer,50,30,100,20,5000,4800,4600,2025-04-30
-Ana Pérez,roberto.camejo[rh]gmail.com,Designer,40,25,90,10,4000,3900,3800,2025-04-30
-Carlos Gómez,roberto.camejo@gmail.com,QA Engineer,30,20,80,15,3500,3400,,2025-04-30
+Roberto Camejo,fastapiassignment@gmail.com,Software Engineer,50,30,100,20,5000,4800,4600,2025-04-30
+Ana Pérez,fastapiassignment[fa]gmail.com,Designer,40,25,90,10,4000,3900,3800,2025-04-30
+Carlos Gómez,fastapiassignment@gmail.com,QA Engineer,30,20,80,15,3500,3400,,2025-04-30
 """
 
     monkeypatch.setattr("app.main.validate_credentials", lambda u, p: True)
@@ -88,8 +85,7 @@ Carlos Gómez,roberto.camejo@gmail.com,QA Engineer,30,20,80,15,3500,3400,,2025-0
 
     async with AsyncClient(base_url="http://web") as ac:
         response = await ac.post(
-            "/process?country=do&company=MiEmpresa",
-            auth=("admin", "admin123"),
+            "/process?credentials=admin%2Badmin123&country=do&company=MiEmpresa",
             files={"file": ("mixed.csv", csv_content, "text/csv")}
         )
 
@@ -106,8 +102,8 @@ Carlos Gómez,roberto.camejo@gmail.com,QA Engineer,30,20,80,15,3500,3400,,2025-0
 
     # Segundo: email inválido
     assert "error" in results[1]
-    assert results[1]["email"] == "roberto.camejo[rh]gmail.com"
+    assert results[1]["email"] == "fastapiassignment[fa]gmail.com"
 
     # Tercero: campo faltante
     assert "error" in results[2]
-    assert results[2]["email"] == "roberto.camejo@gmail.com"
+    assert results[2]["email"] == "fastapiassignment@gmail.com"

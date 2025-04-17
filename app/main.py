@@ -8,8 +8,7 @@ from datetime import datetime, timezone
 
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi import FastAPI, File, UploadFile, Depends, HTTPException, Query
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from fastapi import FastAPI, File, UploadFile, HTTPException, Query
 from starlette.status import HTTP_401_UNAUTHORIZED
 
 from app.models import PaystubData
@@ -19,7 +18,6 @@ from app.email_sender import send_email_with_attachment
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="app/assets"), name="static")
-security = HTTPBasic()
 
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)
 def root():
@@ -48,29 +46,27 @@ def root():
 
 @app.post("/process")
 async def process_payroll(
-    credentials: HTTPBasicCredentials = Depends(security),
+    credentials: str = Query(..., description="Formato: usuario+contraseña"),
     file: UploadFile = File(...),
     country: str = Query("do", enum=["do", "USA"]),
     company: str = Query(...)
 ):
     """
-    Procesa los datos de nomina obtenidos desde el archivo CSV.
-
-    Args:
-        credentials (HTTPBasicCredentials): Credenciales basicas de autenticacion.
-        file (UploadFile): Archivo CSV con datos de nomina.
-        country (str): Codigo de pais, puede ser "do" o "USA".
-        company (str): Nombre de la compañia.
-
-    Returns:
-        dict: Un diccionario con el estado y los resultados del procesamiento.
+    Procesa los datos de nómina obtenidos desde el archivo CSV.
     """
-    # Validar credenciales
-    if not validate_credentials(credentials.username, credentials.password):
+    try:
+        username, password = credentials.split("+")
+    except ValueError:
         raise HTTPException(
-            status_code=HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials",
-            headers={"WWW-Authenticate": "Basic"},
+            status_code=400,
+            detail="Credenciales mal formateadas. Usa el formato: usuario+contraseña"
+        )
+
+    # Validar las credenciales
+    if not validate_credentials(username, password):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid credentials"
         )
 
     # Leer contenido del archivo
