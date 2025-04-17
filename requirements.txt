@@ -1,7 +1,9 @@
 fastapi
 uvicorn
 python-dotenv
+python-multipart
 pydantic
 fpdf
 email-validator
 pytest
+httpx
